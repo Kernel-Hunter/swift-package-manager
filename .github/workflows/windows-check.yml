@@ -3,13 +3,29 @@ on:
   push:
     branches: [ci-windows-check]
 jobs:
-  test:
-    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.15
-    with:
-      enable_linux_checks: false
-      enable_macos_checks: false
-      enable_windows_checks: true
-      windows_build_timeout: 180
-      windows_swift_versions: '["nightly-6.4.x"]'
-      windows_pre_build_command: 'Invoke-Program .\.github\scripts\prebuild.ps1'
-      windows_build_command: 'Invoke-Program swift run -Xlinker /ignore:4217 --configuration release swift-build --build-tests --scratch-path .tests; Invoke-Program swift run -Xlinker /ignore:4217 --configuration release swift-test --skip-build --scratch-path .tests --filter "SourceControlTests.GitRepositoryTests/testRawRepository"'
+  extract:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Old command fails, new command extracts
+        shell: pwsh
+        run: |
+          $archive = "Tests\SourceControlTests\Inputs\TestRepo.tgz"
+          $old = Join-Path $env:RUNNER_TEMP old; New-Item -ItemType Directory $old | Out-Null
+          & tar.exe -x -v -C $old -f $archive 2>&1 | Out-Host
+          "old command exit: $LASTEXITCODE"
+          if ($LASTEXITCODE -eq 0) { throw "expected the unfiltered extraction to fail" }
+          $new = Join-Path $env:RUNNER_TEMP new; New-Item -ItemType Directory $new | Out-Null
+          & tar.exe -x -v --exclude "*/funny-names/*" -C $new -f $archive 2>&1 | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw "filtered extraction failed: $LASTEXITCODE" }
+          $repo = Join-Path $new TestRepo
+          function g { $out = & git -C $repo @args; if ($LASTEXITCODE -ne 0) { throw "git $args failed" }; $out }
+          $main = g rev-parse main; $tag = g rev-parse "1.0^{commit}"
+          if ($main -ne $tag) { throw "1.0 != main" }
+          if ((g rev-parse a8b9fcb) -ne 'a8b9fcbf893b3b02c0196609059ebae37aeb7f0b') { throw "initial commit" }
+          if ((g rev-parse "a8b9fcb^{tree}") -ne '9d463c3b538619448c5d2ecac379e92f075a8976') { throw "initial tree" }
+          g ls-tree a8b9fcb | Out-Host
+          $names = (g ls-tree --name-only a7b19a7) -join ','
+          if ($names -ne 'README.txt,funny-names,subdir') { throw "funny-names root: $names" }
+          g ls-tree -r a7b19a7 funny-names | Out-Host
+          "all checks passed"
