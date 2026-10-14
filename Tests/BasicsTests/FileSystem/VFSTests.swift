@@ -12,7 +12,6 @@
 import Foundation
 
 import Basics
-import func TSCBasic.withTemporaryFile
 import Testing
 
 import struct TSCBasic.ByteString
@@ -60,7 +59,11 @@ struct VFSTests {
         ]
 
         let fs = localFileSystem
-        try withTemporaryFile { [contents] vfsPath in
+        // Write the VFS description to a path inside a temporary directory. A file
+        // from `withTemporaryFile` stays open for the whole closure, and Windows
+        // does not allow `serializeDirectoryTree` to open it again for writing.
+        try withTemporaryDirectory(removeTreeOnDeinit: true) { [contents] vfsDirPath in
+            let vfsPath = vfsDirPath.appending("vfs.json")
             try withTemporaryDirectory(removeTreeOnDeinit: true) { [contents] tempDirPath in
                 let file = tempDirPath.appending("best")
                 try fs.writeFileContents(file, string: "best")
@@ -80,10 +83,10 @@ struct VFSTests {
                 try fs.createDirectory(tempDirPath.appending("dir"))
                 try fs.writeFileContents(tempDirPath.appending(components: ["dir", "file"]), bytes: [])
 
-                try VirtualFileSystem.serializeDirectoryTree(tempDirPath, into: AbsolutePath(vfsPath.path), fs: fs, includeContents: [executable])
+                try VirtualFileSystem.serializeDirectoryTree(tempDirPath, into: vfsPath, fs: fs, includeContents: [executable])
             }
 
-            let vfs = try VirtualFileSystem(path: vfsPath.path, fs: fs)
+            let vfs = try VirtualFileSystem(path: TSCAbsolutePath(vfsPath), fs: fs)
 
             // exists()
             #expect(vfs.exists(AbsolutePath("/")))
