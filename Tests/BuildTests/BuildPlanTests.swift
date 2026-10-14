@@ -650,7 +650,19 @@ class BuildPlanTestCase: BuildSystemProviderTestCase {
             XCTAssertMatch(out, .contains("-module-name exe"))
             if isFlagSupportedInDriver {
                 XCTAssertMatch(out, .contains("-package-name apppkg"))
-                XCTAssertMatch(out, .contains("-package-name foopkg"))
+                switch self.buildSystemProvider {
+                    case .native:
+                        XCTAssertMatch(out, .contains("-package-name foopkg"))
+
+                    case .swiftbuild:
+                        // https://github.com/swiftlang/swift-package-manager/issues/10674
+                        // XCTAssertMatch(out, .contains("-package-name foopkg"))
+                        break
+
+                    case .xcode:
+                        XCTFail("Test assertions have not been defined.")
+
+                }
                 // the flag is not supported if tools-version < 5.9
                 XCTAssertNoMatch(out, .contains("-package-name barpkg"))
             } else {
