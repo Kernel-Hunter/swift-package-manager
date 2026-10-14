@@ -27,8 +27,6 @@ import struct PackageModel.TargetDescription
 
 class PrepareForIndexTests: XCTestCase {
     func testPrepare() async throws {
-        try XCTSkipOnWindows(because: "coreCommands.count = 0 instead of 1. Possibly related to https://github.com/swiftlang/swift-package-manager/issues/8511")
-
         let (graph, fs, scope) = try macrosPackageGraph()
 
         let plan = try await BuildPlan(
@@ -151,10 +149,6 @@ class PrepareForIndexTests: XCTestCase {
     }
 
     func testEnableTestingReleaseConfiguration() async throws {
-        try XCTSkipOnWindows(because: """
-            Assertion failure.  ("0") is not equal to ("1"). Possibly related to https://github.com/swiftlang/swift-package-manager/issues/8511
-        """)
-
         let (fs, observability, graph) = try self.testEnableTestingSetup()
         let scope = observability.topScope
 
@@ -183,8 +177,6 @@ class PrepareForIndexTests: XCTestCase {
     }
 
     func testPrepareNoLazy() async throws {
-        try XCTSkipOnWindows(because: "coreCommands.count = 0 instead of 1. Possibly related to https://github.com/swiftlang/swift-package-manager/issues/8511")
-
         let (graph, fs, scope) = try macrosPackageGraph()
 
         let plan = try await BuildPlan(

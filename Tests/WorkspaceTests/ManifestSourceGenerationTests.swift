@@ -291,10 +291,6 @@ final class ManifestSourceGenerationTests: XCTestCase {
     }
 
     func testPackageDependencyVariations() async throws {
-        try XCTSkipOnWindows(
-            because:"Intermittently fails",
-            skipPlatformCi: true,
-        )
         let manifestContents = """
             // swift-tools-version:5.4
             import PackageDescription
