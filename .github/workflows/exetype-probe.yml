@@ -1,0 +1,11 @@
+name: Windows exe type probe (fork only)
+on:
+  push:
+    branches: [ci-exetype-probe]
+jobs:
+  probe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: .\.github\probe\probe.ps1
