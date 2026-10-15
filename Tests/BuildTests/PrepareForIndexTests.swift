@@ -25,6 +25,16 @@ import class PackageModel.Manifest
 import struct PackageGraph.ModulesGraph
 import struct PackageModel.TargetDescription
 
+/// Returns `path` with `/` replaced by the host's path separator, so it can be
+/// matched against the paths of the generated manifest nodes.
+private func hostPath(_ path: String) -> String {
+    #if os(Windows)
+    return path.replacingOccurrences(of: "/", with: #"\"#)
+    #else
+    return path
+    #endif
+}
+
 class PrepareForIndexTests: XCTestCase {
     func testPrepare() async throws {
         let (graph, fs, scope) = try macrosPackageGraph()
@@ -47,7 +57,7 @@ class PrepareForIndexTests: XCTestCase {
         // Ensure swiftmodules built with correct arguments
         let coreCommands = manifest.commands.values.filter {
             $0.tool.outputs.contains(where: {
-                $0.name.hasSuffix("debug/Core.build/Core.swiftmodule")
+                $0.name.hasSuffix(hostPath("debug/Core.build/Core.swiftmodule"))
             })
         }
         XCTAssertEqual(coreCommands.count, 1)
@@ -57,7 +67,7 @@ class PrepareForIndexTests: XCTestCase {
         // Ensure tools are built normally
         let toolCommands = manifest.commands.values.filter {
             $0.tool.outputs.contains(where: {
-                $0.name.hasSuffix("debug/Modules-tool/SwiftSyntax.swiftmodule")
+                $0.name.hasSuffix(hostPath("debug/Modules-tool/SwiftSyntax.swiftmodule"))
             })
         }
         XCTAssertEqual(toolCommands.count, 1)
@@ -69,7 +79,7 @@ class PrepareForIndexTests: XCTestCase {
 
         // Make sure only object files for tools are built
         XCTAssertTrue(
-            outputs.filter { $0.hasSuffix(".o") }.allSatisfy { $0.contains("-tool.build/") },
+            outputs.filter { $0.hasSuffix(".o") }.allSatisfy { $0.contains(hostPath("-tool.build/")) },
             "outputs:\n\t\(outputs.filter { $0.hasSuffix(".o") }.joined(separator: "\n\t"))"
         )
     }
@@ -139,7 +149,7 @@ class PrepareForIndexTests: XCTestCase {
 
         XCTAssertNil(debugManifest.commands.values.first(where: {
             guard let swiftCommand = $0.tool as? SwiftCompilerTool,
-                swiftCommand.outputs.contains(where: { $0.name.hasSuffix("/lib.swiftmodule")})
+                swiftCommand.outputs.contains(where: { $0.name.hasSuffix(hostPath("/lib.swiftmodule"))})
             else {
                 return false
             }
@@ -167,7 +177,7 @@ class PrepareForIndexTests: XCTestCase {
 
         XCTAssertEqual(releaseManifest.commands.values.filter({
             guard let swiftCommand = $0.tool as? SwiftCompilerTool,
-                swiftCommand.outputs.contains(where: { $0.name.hasSuffix("/lib.swiftmodule")})
+                swiftCommand.outputs.contains(where: { $0.name.hasSuffix(hostPath("/lib.swiftmodule"))})
             else {
                 return false
             }
@@ -193,7 +203,7 @@ class PrepareForIndexTests: XCTestCase {
         // Ensure swiftmodules built with correct arguments
         let coreCommands = manifest.commands.values.filter {
             $0.tool.outputs.contains(where: {
-                $0.name.hasSuffix("debug/Core.build/Core.swiftmodule")
+                $0.name.hasSuffix(hostPath("debug/Core.build/Core.swiftmodule"))
             })
         }
         XCTAssertEqual(coreCommands.count, 1)
