@@ -58,6 +58,11 @@ struct VFSTests {
             0x02
         ]
 
+        // Windows decides whether a file is executable from its extension, so the
+        // executable and the symlink to it need an `.exe` suffix there.
+        let execName = "exec-foo\(ProcessInfo.exeSuffix)"
+        let execSymName = "exec-sym\(ProcessInfo.exeSuffix)"
+
         let fs = localFileSystem
         // Write the VFS description to a path inside a temporary directory. A file
         // from `withTemporaryFile` stays open for the whole closure, and Windows
@@ -71,13 +76,13 @@ struct VFSTests {
                 let sym = tempDirPath.appending("hello")
                 try fs.createSymbolicLink(sym, pointingAt: file, relative: false)
 
-                let executable = tempDirPath.appending("exec-foo")
+                let executable = tempDirPath.appending(execName)
                 try fs.writeFileContents(executable, bytes: ByteString(contents))
 #if !os(Windows)
                 try fs.chmod(.executable, path: executable, options: [])
 #endif
 
-                let executableSym = tempDirPath.appending("exec-sym")
+                let executableSym = tempDirPath.appending(execSymName)
                 try fs.createSymbolicLink(executableSym, pointingAt: executable, relative: false)
 
                 try fs.createDirectory(tempDirPath.appending("dir"))
@@ -112,8 +117,8 @@ struct VFSTests {
             #expect(!vfs.isDirectory(symPath))
 
             // isExecutableFile
-            let executablePath = AbsolutePath("/exec-foo")
-            let executableSymPath = AbsolutePath("/exec-sym")
+            let executablePath = AbsolutePath.root.appending(execName)
+            let executableSymPath = AbsolutePath.root.appending(execSymName)
             #expect(vfs.isExecutableFile(executablePath))
             #expect(vfs.isExecutableFile(executableSymPath))
             #expect(vfs.isSymlink(executableSymPath))
@@ -132,7 +137,7 @@ struct VFSTests {
 
             // getDirectoryContents()
             let dirContents = try vfs.getDirectoryContents(AbsolutePath("/"))
-            #expect(dirContents.sorted() == ["best", "dir", "exec-foo", "exec-sym", "hello"])
+            #expect(dirContents.sorted() == ["best", "dir", execName, execSymName, "hello"])
             #expect {try vfs.getDirectoryContents(AbsolutePath("/does-not-exist"))} throws: { error in
                 (error.localizedDescription == "no such file or directory: \(AbsolutePath("/does-not-exist"))")
             }
@@ -140,7 +145,7 @@ struct VFSTests {
             let thisDirectoryContents = try vfs.getDirectoryContents(AbsolutePath("/"))
             #expect(!thisDirectoryContents.contains(where: { $0 == "." }))
             #expect(!thisDirectoryContents.contains(where: { $0 == ".." }))
-            #expect(thisDirectoryContents.sorted() == ["best", "dir", "exec-foo", "exec-sym", "hello"])
+            #expect(thisDirectoryContents.sorted() == ["best", "dir", execName, execSymName, "hello"])
 
             let contents = try vfs.getDirectoryContents(AbsolutePath("/dir"))
             #expect(contents == ["file"])
