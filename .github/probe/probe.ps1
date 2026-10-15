@@ -23,5 +23,7 @@ Copy-Item C:\Windows\System32\where.exe "$d\where-copy.exe"
 Set-Content "$d\text" "best"
 New-Item -ItemType SymbolicLink -Path "$d\where-sym" -Target "$d\where-noext" | Out-Null
 New-Item -ItemType SymbolicLink -Path "$d\tiny-sym" -Target "$d\tiny-noext" | Out-Null
+New-Item -ItemType SymbolicLink -Path "$d\tiny-sym.exe" -Target "$d\tiny.exe" | Out-Null
+New-Item -ItemType SymbolicLink -Path "$d\tiny-sym-noext" -Target "$d\tiny.exe" | Out-Null
 foreach ($f in Get-ChildItem $d) { "{0,-18} size={1,-7} SHGFI_EXETYPE=0x{2:X}" -f $f.Name, $f.Length, [Probe]::ExeType($f.FullName) }
 "where.exe size: " + (Get-Item C:\Windows\System32\where.exe).Length
