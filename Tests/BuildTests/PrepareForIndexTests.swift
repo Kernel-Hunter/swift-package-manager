@@ -53,6 +53,7 @@ class PrepareForIndexTests: XCTestCase {
         // Make sure we're building the swift modules
         let outputs = manifest.commands.flatMap(\.value.tool.outputs).map(\.name)
         XCTAssertTrue(outputs.contains(where: { $0.hasSuffix(".swiftmodule") }))
+        print("DEBUG-CI module/object outputs:\n" + outputs.filter { $0.hasSuffix(".swiftmodule") || $0.hasSuffix(".o") || $0.hasSuffix(".obj") }.sorted().joined(separator: "\n"))
 
         // Ensure swiftmodules built with correct arguments
         let coreCommands = manifest.commands.values.filter {
